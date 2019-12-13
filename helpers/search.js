@@ -62,8 +62,8 @@ module.exports = {
 
   searchById: function(id, callback) {
     const values = [id];
-    const sql = `select * from public.tbl_search  where location_id = $1;`;
-    const pg = new postgres({ dbName: "tabular" });
+    const sql = `select * from web_search.tbl_search_mv  where location_id = $1;`;
+    const pg = new postgres();
     pg.selectAllWithValues(sql, values, result => {
       console.log(result);
       callback(result[0]);
@@ -71,8 +71,8 @@ module.exports = {
   },
 
   getSearchTypes: function(callback) {
-    const sql = "select distinct(type) from public.tbl_search order by type";
-    const pg = new postgres({ dbName: "tabular" });
+    const sql = "select distinct(type) from web_search.tbl_search_mv order by type";
+    const pg = new postgres();
     pg.selectAll(sql, result => {
       let types = [];
       result.forEach(type => {
@@ -87,7 +87,7 @@ module.exports = {
 
     if (type === "All" || type === "undefined") type = undefined;
 
-    let sql = `select name,type,municipality,location_id from public.tbl_search  where name ilike $1 || '%' and type = 'Address'`;
+    let sql = `select name,type,municipality,location_id from web_search.tbl_search_mv  where name ilike $1 || '%' and type = 'Address'`;
     if (muni !== undefined && muni !== "undefined") {
       sql += " and municipality = '" + muni + "'";
     }
@@ -98,7 +98,7 @@ module.exports = {
 
     sql += " limit " + limit + ";";
 
-    const pg = new postgres({ dbName: "tabular" });
+    const pg = new postgres();
     const pgResult = await pg.selectAllWithValuesWait(sql, values);
     return pgResult;
   },
@@ -109,22 +109,22 @@ module.exports = {
 
     const values = [value, limit];
     let sql = "";
-    if (muni === undefined && type === undefined) sql = `select name,type,municipality,location_id from public.tbl_search  where name ilike $1 || '%' and type <> 'Address' limit $2;`;
+    if (muni === undefined && type === undefined) sql = `select name,type,municipality,location_id from web_search.tbl_search_mv  where name ilike $1 || '%' and type <> 'Address' limit $2;`;
     if (muni !== undefined && type === undefined) {
       values.push(muni);
-      sql = `select name,type,municipality,location_id from public.tbl_search  where name ilike $1 || '%' and type <> 'Address' and municipality = $3 limit $2;`;
+      sql = `select name,type,municipality,location_id from web_search.tbl_search_mv  where name ilike $1 || '%' and type <> 'Address' and municipality = $3 limit $2;`;
     } else if (muni !== undefined && type !== undefined) {
       values.push(muni);
       values.push(type);
-      sql = `select name,type,municipality,location_id from public.tbl_search  where name ilike $1 || '%' and type = $4 and municipality = $3 limit $2;`;
+      sql = `select name,type,municipality,location_id from web_search.tbl_search_mv  where name ilike $1 || '%' and type = $4 and municipality = $3 limit $2;`;
     } else if (muni === undefined && type !== undefined) {
       values.push(type);
-      sql = `select name,type,municipality,location_id from public.tbl_search  where name ilike $1 || '%' and type = $3 limit $2;`;
+      sql = `select name,type,municipality,location_id from web_search.tbl_search_mv  where name ilike $1 || '%' and type = $3 limit $2;`;
     }
 
     console.log(type);
     console.log(sql);
-    const pg = new postgres({ dbName: "tabular" });
+    const pg = new postgres();
     const pgResult = await pg.selectAllWithValuesWait(sql, values);
     return pgResult;
   },

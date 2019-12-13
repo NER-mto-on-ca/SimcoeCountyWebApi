@@ -3,10 +3,8 @@ const config = require("../config.json");
 
 module.exports = class Postgres {
   constructor(opt) {
-    let conInfo = null;
-    if (opt.dbName === "tabular") conInfo = config.postgresConnectionTabular;
-    else if (opt.dbName === "weblive") conInfo = config.postgresConnectionWeblive;
-
+    const conInfo = config.postgresConnection;
+    
     this.pool = new Pool({
       user: conInfo.user,
       host: conInfo.host,

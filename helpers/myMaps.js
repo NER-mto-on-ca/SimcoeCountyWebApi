@@ -8,7 +8,7 @@ module.exports = {
     var dtString = common.getSqlDateString(new Date());
 
     // BUILD SQL
-    var insertSql = `INSERT INTO public.tbl_mymaps (json,date_created)
+    var insertSql = `INSERT INTO web_search.tbl_mymaps (json,date_created)
     values ('${JSON.stringify(json)}','${dtString}') RETURNING id;`;
 
     // INSERT RECORD
@@ -20,7 +20,7 @@ module.exports = {
 
   getMyMaps: function(id, callback) {
     console.log("Get My Maps");
-    var sql = `select * from public.tbl_mymaps  where id = '${id}'`;
+    var sql = `select * from web_search.tbl_mymaps  where id = '${id}'`;
     const pg = new postgres({ dbName: "tabular" });
     pg.selectFirst(sql, result => {
       callback(result);

@@ -13,7 +13,7 @@ module.exports = {
     var dtString = common.getSqlDateString(new Date());
 
     // BUILD SQL
-    var insertSql = `INSERT INTO public.tbl_os_feedback (rating,for_business_use,email,comments,xminimum,yminimum,xmaximum,ymaximum,centerx,centery,scale,date_created,other_uses,education,recreation,real_estate,business,delivery,economic_development,report_problem,my_maps_id,feature_id)
+    var insertSql = `INSERT INTO web_search.tbl_os_feedback (rating,for_business_use,email,comments,xminimum,yminimum,xmaximum,ymaximum,centerx,centery,scale,date_created,other_uses,education,recreation,real_estate,business,delivery,economic_development,report_problem,my_maps_id,feature_id)
     values (${feedback.rating},${feedback.forBusinessUse ? 1 : 0},'${feedback.email}',
     '${feedback.comments}',${feedback.xmin},${feedback.ymin},${feedback.xmax},${feedback.ymax},${feedback.centerX},
     ${feedback.centerY},${feedback.scale},'${dtString}','${feedback.otherUses}',${feedback.education},${feedback.recreation},
@@ -34,7 +34,7 @@ module.exports = {
   },
 
   getFeedback: function(id, callback) {
-    var sql = `select * from public.tbl_os_feedback  where id = '${id}'`;
+    var sql = `select * from web_search.tbl_os_feedback  where id = '${id}'`;
     const pg = new postgres({ dbName: "tabular" });
     pg.selectFirst(sql, result => {
       callback(result);
