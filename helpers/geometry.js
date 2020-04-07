@@ -15,7 +15,7 @@ module.exports = {
   getGeometryCenter: function(obj, callback) {
     const geoJSON = obj.geoJSON;
     const srid = obj.srid;
-    const sql = `SELECT ST_AsGeoJSON(web_search.fn_sc_find_geometry_center(ST_SetSRID(ST_GeomFromGeoJSON('${geoJSON}'), ${srid}))) As geojson`;
+    const sql = `SELECT ST_AsGeoJSON(ST_Centroid(ST_SetSRID(ST_GeomFromGeoJSON('${geoJSON}'), ${srid}))) As geojson`;
     const pg = new postgres({ dbName: "weblive" });
     pg.selectFirst(sql, result => {
       callback(result);
