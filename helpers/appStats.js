@@ -7,21 +7,19 @@ module.exports = {
     var dtString = common.getSqlDateString(new Date());
 
     // BUILD SQL
-    var insertSql = `INSERT INTO web_search.tbl_app_stats (app_name,action_type,action_description,action_date) 
-    values ('${appName}','${actionType}','${description}','${dtString}');`;
-
+    var insertSql = `INSERT INTO web_search.tbl_app_stats (app_name,action_type,action_description,action_date) values ($1,$2,$3,$4);`;
+    var values = [appName,actionType,description,dtString];
     // INSERT RECORD
     const pg = new postgres({ dbName: "tabular" });
-    pg.insert(insertSql);
+    pg.insert(insertSql,values);
   },
 
   getAppStats: function(fromDate, toDate, type, callback) {
     //select date_day,total from web_search.get_app_stats('2019-09-01','2019-10-8', 'STARTUP_MAP_LOAD');
-    const sqlTemplate = (fromDate, toDate, type) => `select x,y from web_search.get_app_statsxy('${fromDate}','${toDate}', '${type}');`;
-    const sql = sqlTemplate(fromDate, toDate, type);
-    console.log(sql);
+    var sql = `select x,y from web_search.get_app_statsxy($1,$2,$3);`;
+    var values = [fromDate,toDate,type];
     const pg = new postgres({ dbName: "tabular" });
-    pg.selectAll(sql, result => {
+    pg.selectAllWithValues(sql,values, result => {
       callback(result);
     });
   },
