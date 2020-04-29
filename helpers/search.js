@@ -144,7 +144,7 @@ module.exports = {
     let osmUrl = osmUrlTemplateViewBox(viewBox, limit, keywords);
     let osmResult = await this._getJSON(osmUrl);
     let osmPlaces = [];
-    if (osmResult.length > 0) {
+    if (osmResult !== undefined && osmResult.length > 0) {
       osmResult.forEach(osm => {
         //console.log(osm);
         let city = "";

@@ -6,6 +6,7 @@ var appStats = require("../helpers/appStats");
 const fetch = require("node-fetch");
 const config = require("../config.json");
 const geometry = require("../helpers/geometry");
+const lhrs = require("../helpers/lhrs");
 const myMaps = require("../helpers/myMaps");
 const streetAddresses = require("../helpers/streetAddresses");
 const search = require("../helpers/search");
@@ -168,6 +169,8 @@ router.get("/getSearchTypes", function(req, res, next) {
   });
 });
 
+
+
 // GET WEATHER
 router.get("/getCityWeather/:city", function(req, res, next) {
   if (!common.isHostAllowed(req, res)) return;
@@ -211,6 +214,47 @@ router.get("/getMapImage", function(req, res, next) {
 
   //   res.send(JSON.stringify(result));
   // });
+});
+
+
+// LHRS - GET LHRS VERSION
+router.get("/getLHRSVersion", function(req, res, next) {
+  if (!common.isHostAllowed(req, res)) return;
+  lhrs.getLHRSVersions( result => {
+    if (result === undefined) res.send(JSON.stringify([]));
+    res.send(JSON.stringify(result));
+  });
+});
+
+// LHRS - GET LHRS BY XY
+router.post("/postGetLHRSByXY", function(req, res, next) {
+  if (!common.isHostAllowed(req, res)) return;
+  lhrs.getLHRSByXY(req.body, result => {
+    res.send(JSON.stringify({result:result}));
+  });
+});
+
+// LHRS - GET LHRS BY BASE POINT
+router.post("/postGetLHRSByBPoint", function(req, res, next) {
+  if (!common.isHostAllowed(req, res)) return;
+  lhrs.getLHRSByBPoint(req.body, result => {
+    res.send(JSON.stringify({result:result}));
+  });
+});
+
+// LHRS - GET LHRS BY M DISTANCE
+router.post("/postGetLHRSByMDistance", function(req, res, next) {
+  if (!common.isHostAllowed(req, res)) return;
+  lhrs.getLHRSByMDistance(req.body, result => {
+    res.send(JSON.stringify({result:result}));
+  });
+});
+// LHRS - GET LHRS BY BASE POINT
+router.post("/postGetLHRSLinearByMDistance", function(req, res, next) {
+  if (!common.isHostAllowed(req, res)) return;
+  lhrs.getLHRSLinearByMDistance(req.body, result => {
+    res.send(JSON.stringify({result:result}));
+  });
 });
 
 // GET APP STATS
