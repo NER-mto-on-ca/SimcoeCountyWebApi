@@ -3,7 +3,7 @@ const postgres = require("./postgres");
 module.exports = {
   getLHRSVersions: function(callback) {
 
-    const sql = `select lhrs_version_title, lhrs_version, "current" from lhrs.lhrs_version order by "current" desc, lhrs_version;`;
+    const sql = `select lhrs_version_title, lhrs_version, "current" from lhrs.lhrs_version order by "current" desc, lhrs_version_title desc;`;
     
     const pg = new postgres();
     pg.selectAll(sql, result => {
