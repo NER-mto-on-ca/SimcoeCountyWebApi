@@ -8,8 +8,8 @@ const useESRIGeocoder = searchConfig.useESRIGeocoder;
 const useOSMSearch = searchConfig.useOSMSearch;
 
 const geocodeUrlTemplate = (limit, keywords) =>
-  `https://maps.simcoe.ca/arcgis/rest/services/SimcoeUtilities/AddressLocator/GeocodeServer/findAddressCandidates?f=json&maxLocations=${limit}&outFields=House,StreetName,SufType,City&Street=${keywords}`;
-const osmUrlTemplateViewBox = (viewBox, limit, keywords) => `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&viewbox=${viewBox}&bounded=1&limit=${limit}&q=${keywords}`;
+  `https://maps.simcoe.ca/arcgis/rest/services/SimcoeUtilities/AddressLocator/GeocodeServer/findAddressCandidates?f=json&countrycodes=ca&maxLocations=${limit}&outFields=House,StreetName,SufType,City&Street=${keywords}`;
+const osmUrlTemplateViewBox = (viewBox, limit, keywords) => `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=ca&viewbox=${viewBox}&bounded=1&limit=${limit}&q=${keywords}`;
 const osmUrlTemplateNoViewBox = (limit, keywords) => `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=ca&limit=${limit}&q=${keywords}`;
 
 module.exports = {
@@ -28,7 +28,7 @@ module.exports = {
     let addresses = [];
     if (isFirstWordNumeric) {
       addresses = await this._searchAddress(keywords, muni, type, limit);
-
+      /*
       // FALL BACK TO GEOCODE
       if (useESRIGeocoder && addresses.length === 0 && (type === "Address" || type === undefined || type === "All")) {
         const geocodeResult = await this._getJSON(geocodeUrlTemplate(limit, keywords));
@@ -46,7 +46,7 @@ module.exports = {
             addresses.push(searchObj);
           }
         });
-      }
+      }*/
     }
 
     allValues.push(...addresses);
