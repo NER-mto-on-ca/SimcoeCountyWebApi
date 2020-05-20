@@ -10,52 +10,22 @@ const useOSMSearch = searchConfig.useOSMSearch;
 const geocodeUrlTemplate = (limit, keywords) =>
   `https://maps.simcoe.ca/arcgis/rest/services/SimcoeUtilities/AddressLocator/GeocodeServer/findAddressCandidates?f=json&countrycodes=ca&maxLocations=${limit}&outFields=House,StreetName,SufType,City&Street=${keywords}`;
 const osmUrlTemplateViewBox = (viewBox, limit, keywords) => `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=ca&viewbox=${viewBox}&bounded=1&limit=${limit}&q=${keywords}`;
-const osmUrlTemplateNoViewBox = (limit, keywords) => `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=ca&limit=${limit}&q=${keywords}`;
 
 module.exports = {
-  search: async function(keywords, type = undefined, muni = undefined, limit = 10, callback) {
+  search: async function(keywords, type = undefined, limit = 10, callback) {
     // MINIMUM 1 CHAR
     if (keywords.length < 2) {
       callback([]);
       return;
     }
 
-    const parts = keywords.split(" ");
-    const isFirstWordNumeric = !isNaN(parts[0]);
-
     // FIRST PART IS NUMBER, ASSUME ADDRESS
     let allValues = [];
-    let addresses = [];
-    if (isFirstWordNumeric) {
-      addresses = await this._searchAddress(keywords, muni, type, limit);
-      /*
-      // FALL BACK TO GEOCODE
-      if (useESRIGeocoder && addresses.length === 0 && (type === "Address" || type === undefined || type === "All")) {
-        const geocodeResult = await this._getJSON(geocodeUrlTemplate(limit, keywords));
-        const candidates = geocodeResult.candidates;
-        candidates.forEach(candidate => {
-          if (candidate.score > 10) {
-            const searchObj = {
-              name: this._toTitleCase(candidate.address),
-              type: "Geocode",
-              municipality: this._toTitleCase(candidate.attributes.City),
-              location_id: null,
-              x: candidate.location.x,
-              y: candidate.location.y
-            };
-            addresses.push(searchObj);
-          }
-        });
-      }*/
-    }
-
-    allValues.push(...addresses);
-    // FILL IN THE SEARCH WITH OTHERS
-    if (allValues.length < limit) {
-      const numRecordsToReturn = limit - allValues.length;
-      let nonAddresses = await this._searchNonAddress(keywords, type, muni, limit);
-      allValues.push(...nonAddresses);
-    }
+    let results = [];
+    //run default search
+    results = await this._search(keywords, type, limit);
+    allValues.push(...results);
+    
 
     // // FILL IN THE SEARCH WITH OSM, ONLY IF NO RESULTS
     if ((useOSMSearch && allValues.length === 0) || type === "Open Street Map" || (allValues.length === 0 && type === "All")) {
@@ -69,7 +39,7 @@ module.exports = {
 
   searchById: function(id, callback) {
     const values = [id];
-    const sql = `select * from web_search.tbl_search_mv  where location_id = $1;`;
+    const sql = `select *, search.title as name  from web_search.tbl_search_ts_mv search where id = $1;`;
     const pg = new postgres();
     pg.selectAllWithValues(sql, values, result => {
       callback(result[0]);
@@ -77,7 +47,7 @@ module.exports = {
   },
 
   getSearchTypes: function(callback) {
-    const sql = "select distinct(type) from web_search.tbl_search_mv order by type";
+    const sql = "select type from web_search.tbl_search_layers order by type";
     const pg = new postgres();
     pg.selectAll(sql, result => {
       let types = [];
@@ -88,48 +58,40 @@ module.exports = {
     });
   },
 
-  _searchAddress: async function(value, muni = undefined, type = undefined, limit = 10) {
-    const values = [value];
-
-    if (type === "All" || type === "undefined") type = undefined;
-
-    let sql = `select name,type,municipality,location_id from web_search.tbl_search_mv  where name ilike $1 || '%' and type = 'Address'`;
-    if (muni !== undefined && muni !== "undefined") {
-      sql += " and municipality = '" + muni + "'";
+  _search: async function(value,  type = undefined, limit = 10) {
+    if (type === "All" || type === "undefined" || type === undefined) type = "ALL";
+    const values = [value,type,limit];
+    let sqlSelect = `SELECT title as "name", description, type, id, 1 AS rank`;
+      let sqlFrom = `FROM web_search.tbl_search_ts_mv`;
+      let sqlWhere = `WHERE title ilike $1 || '%'`;
+      let sqlOrder = `ORDER BY "name"`;
+      let sqlLimit = `LIMIT $3;`;
+    //QUICK SEARCH FOR SHORT STRINGS
+    if (value.length < 5) {
+      sqlSelect = `SELECT title as "name", description, type, id, 1 AS rank`;
+      sqlFrom = `FROM web_search.tbl_search_ts_mv`;
+      sqlWhere = `WHERE (title ilike $1 || '%')`;
+      sqlOrder = `ORDER BY "name"`;
+      sqlLimit = `LIMIT $3;`;
+    }else{
+      sqlSelect = `SELECT title as "name", description, type, id, 
+      CASE WHEN title ilike $1 || '%' 
+        THEN 1 WHEN title ilike '%' || $1 || '%' 
+        THEN 0.9 WHEN description ilike '%' || $1 || '%' 
+        THEN 0.8 ELSE ts_rank_cd(ts, query) END AS rank`;
+      sqlFrom = `FROM web_search.tbl_search_ts_mv, to_tsquery_partial($1) query`;
+      sqlWhere = `WHERE (ts @@ query OR title ilike '%' || $1 || '%' OR description ilike '%' || $1 || '%')`;
+      sqlOrder = `ORDER BY rank DESC, "name"`;
+      sqlLimit = `LIMIT $3;`;
     }
+
 
     if (type !== undefined && type !== "undefined") {
-      sql += " and type = '" + type + "'";
+      sqlWhere += " AND (type = $2 OR 'ALL' = $2) ";
     }
 
-    sql += " limit " + limit + ";";
-
-    const pg = new postgres();
-    const pgResult = await pg.selectAllWithValuesWait(sql, values);
-    return pgResult;
-  },
-
-  _searchNonAddress: async function(value, type = undefined, muni = undefined, limit = 10) {
-    if (type === "undefined" || type === "All") type = undefined;
-    if (muni === "undefined") muni = undefined;
-
-    const values = [value, limit];
-    let sql = "";
-    if (muni === undefined && type === undefined) sql = `select name,type,municipality,location_id from web_search.tbl_search_mv  where name ilike $1 || '%' and type <> 'Address' limit $2;`;
-    if (muni !== undefined && type === undefined) {
-      values.push(muni);
-      sql = `select name,type,municipality,location_id from web_search.tbl_search_mv  where name ilike $1 || '%' and type <> 'Address' and municipality = $3 limit $2;`;
-    } else if (muni !== undefined && type !== undefined) {
-      values.push(muni);
-      values.push(type);
-      sql = `select name,type,municipality,location_id from web_search.tbl_search_mv  where name ilike $1 || '%' and type = $4 and municipality = $3 limit $2;`;
-    } else if (muni === undefined && type !== undefined) {
-      values.push(type);
-      sql = `select name,type,municipality,location_id from web_search.tbl_search_mv  where name ilike $1 || '%' and type = $3 limit $2;`;
-    }
-
-    console.log(type);
-    console.log(sql);
+    let sql = [sqlSelect, sqlFrom,sqlWhere,sqlOrder,sqlLimit].join(" ");
+    //console.log(sql);
     const pg = new postgres();
     const pgResult = await pg.selectAllWithValuesWait(sql, values);
     return pgResult;
@@ -146,7 +108,6 @@ module.exports = {
     let osmPlaces = [];
     if (osmResult !== undefined && osmResult.length > 0) {
       osmResult.forEach(osm => {
-        //console.log(osm);
         let city = "";
         if (osm.address.city !== undefined) city = osm.address.city;
         else city = osm.address.town;
@@ -161,27 +122,11 @@ module.exports = {
         };
         osmPlaces.push(searchObj);
       });
-    } else {
-      // QUERY EVERYTHING
-      // let osmResult = await this._getJSON(osmUrlTemplateNoViewBox(limit, keywords));
-      // osmResult.forEach(osm => {
-      //   //console.log(osm);
-      //   let city = "";
-      //   if (osm.address.city !== undefined) city = osm.address.city;
-      //   else if (osm.address.town !== undefined) city = osm.address.town;
-      //   else city = osm.address.state;
-      //   const searchObj = { name: osm.display_name, type: this._toTitleCase(osm.type + " - Open Street Map"), municipality: this._toTitleCase(city), location_id: null, x: osm.lon, y: osm.lat, place_id: osm.place_id };
-      //   osmPlaces.push(searchObj);
-      // });
-    }
-
-    console.log(osmPlaces.length);
+    } 
     return osmPlaces;
   },
 
-  _isFirstWordNumeric: function(value) {
-    return typeof value == "number";
-  },
+
 
   async _getJSON(url, callback) {
     try {
@@ -191,21 +136,6 @@ module.exports = {
     } catch (error) {
       console.log(error);
     }
-
-    // const data = await fetch(url)
-    //   .then(async res => {
-    //     const resp = await res.json();
-    //     return resp;
-    //   })
-    //   .catch(err => {
-    //     console.log("Error: ", err);
-    //   });
-    // if (callback !== undefined) {
-    //   //console.log(data);
-    //   callback(data);
-    // }
-
-    //return await data;
   },
 
   _toTitleCase(str) {

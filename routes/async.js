@@ -16,21 +16,13 @@ routeWait.get("/search", async function(req, res, next) {
   const keywords = req.query.q;
   const limit = req.query.limit;
   const type = req.query.type;
-  const muni = req.query.muni;
 
   if (!common.isHostAllowed(req, res)) return;
-  await search.search(keywords, type, muni, limit, async result => {
+  await search.search(keywords, type, limit, async result => {
     if (result === undefined) await res.send(JSON.stringify([]));
     res.send(JSON.stringify(result));
   });
 });
-// routeWait.get("/search/:keywords/:type?/:muni?/:limit?", async function(req, res, next) {
-//   //console.log(req.params.limit);
-//   if (!common.isHostAllowed(req, res)) return;
-//   await search.search(req.params.keywords, req.params.type, req.params.muni, req.params.limit, async result => {
-//     if (result === undefined) await res.send(JSON.stringify([]));
-//     res.send(JSON.stringify(result));
-//   });
-// });
+
 
 module.exports = routeWait;
