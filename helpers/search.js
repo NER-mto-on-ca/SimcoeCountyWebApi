@@ -39,7 +39,22 @@ module.exports = {
 
   searchById: function(id, callback) {
     const values = [id];
-    const sql = `select *, search.title as name  from web_search.tbl_search_ts_mv search where id = $1;`;
+    let selectFields = [`search_table.id`,
+                        `search_table.title as "name"`,
+                        `search_table.description`,
+                        `search_table.type`,
+                        `search_table.geojson`,
+                        `search_table.geojson_point`,
+                        `search_table.geojson_extent`,
+                        `search_layers.layers`,
+                        `1 AS rank`
+                        ]
+    let sqlSelect = `SELECT ` + selectFields.join(",");
+    let sqlFrom = `FROM web_search.tbl_search_ts_mv search_table`;
+    let sqlJoin = `INNER JOIN web_search.tbl_search_layers search_layers ON search_table.type = search_layers.type`;
+    let sqlWhere = `WHERE search_table.id = $1`;
+    let sqlLimit = `LIMIT 1;`;
+    let sql = [sqlSelect, sqlFrom,sqlJoin,sqlWhere,sqlLimit].join(" ");
     const pg = new postgres();
     pg.selectAllWithValues(sql, values, result => {
       callback(result[0]);
