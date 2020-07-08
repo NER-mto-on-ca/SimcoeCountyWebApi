@@ -8,9 +8,8 @@ const useESRIGeocoder = searchConfig.useESRIGeocoder;
 const useOSMSearch = searchConfig.useOSMSearch;
 
 const geocodeUrlTemplate = (limit, keywords) =>
-  `https://maps.simcoe.ca/arcgis/rest/services/SimcoeUtilities/AddressLocator/GeocodeServer/findAddressCandidates?f=json&maxLocations=${limit}&outFields=House,StreetName,SufType,City&Street=${keywords}`;
-const osmUrlTemplateViewBox = (viewBox, limit, keywords) => `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&viewbox=${viewBox}&bounded=1&limit=${limit}&q=${keywords}`;
-const osmUrlTemplateNoViewBox = (limit, keywords) => `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=ca&limit=${limit}&q=${keywords}`;
+  `https://maps.simcoe.ca/arcgis/rest/services/SimcoeUtilities/AddressLocator/GeocodeServer/findAddressCandidates?f=json&countrycodes=ca&maxLocations=${limit}&outFields=House,StreetName,SufType,City&Street=${keywords}`;
+const osmUrlTemplateViewBox = (viewBox, limit, keywords) => `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=ca&viewbox=${viewBox}&bounded=1&limit=${limit}&q=${keywords}`;
 
 module.exports = {
   search: async function (keywords, type = undefined, muni = undefined, limit = 10, callback) {
@@ -19,9 +18,6 @@ module.exports = {
       callback([]);
       return;
     }
-
-    const parts = keywords.split(" ");
-    const isFirstWordNumeric = !isNaN(parts[0]);
 
     // FIRST PART IS NUMBER, ASSUME ADDRESS
     let allValues = [];
@@ -89,20 +85,19 @@ module.exports = {
   },
 
   _searchAddress: async function (value, muni = undefined, type = undefined, limit = 10) {
-    const values = [value];
+    const values =  [value,muni,type,limit];
 
     if (type === "All" || type === "undefined") type = undefined;
 
     let sql = `select name,type,municipality,location_id from public.tbl_search  where name ilike $1 || '%' and type = 'Address'`;
     if (muni !== undefined && muni !== "undefined") {
-      sql += " and municipality = '" + muni + "'";
+      sql += " and municipality = $2";
     }
 
     if (type !== undefined && type !== "undefined") {
-      sql += " and type = '" + type + "'";
+      sql += " and type = $3";
     }
 
-    sql += " limit " + limit + ";";
 
     const pg = new postgres({ dbName: "tabular" });
     const pgResult = await pg.selectAllWithValuesWait(sql, values);
@@ -129,7 +124,8 @@ module.exports = {
       sql = `select name,type,municipality,location_id from public.tbl_search  where name ilike '%' || $1 || '%' and type = $3 and type <> 'Address' limit $2;`;
     }
 
-    const pg = new postgres({ dbName: "tabular" });
+    //console.log(sql);
+    const pg = new postgres();
     const pgResult = await pg.selectAllWithValuesWait(sql, values);
     return pgResult;
   },
@@ -160,21 +156,7 @@ module.exports = {
         };
         osmPlaces.push(searchObj);
       });
-    } else {
-      // QUERY EVERYTHING
-      // let osmResult = await this._getJSON(osmUrlTemplateNoViewBox(limit, keywords));
-      // osmResult.forEach(osm => {
-      //   //console.log(osm);
-      //   let city = "";
-      //   if (osm.address.city !== undefined) city = osm.address.city;
-      //   else if (osm.address.town !== undefined) city = osm.address.town;
-      //   else city = osm.address.state;
-      //   const searchObj = { name: osm.display_name, type: this._toTitleCase(osm.type + " - Open Street Map"), municipality: this._toTitleCase(city), location_id: null, x: osm.lon, y: osm.lat, place_id: osm.place_id };
-      //   osmPlaces.push(searchObj);
-      // });
-    }
-
-    console.log(osmPlaces.length);
+    } 
     return osmPlaces;
   },
 
@@ -190,21 +172,6 @@ module.exports = {
     } catch (error) {
       console.log(error);
     }
-
-    // const data = await fetch(url)
-    //   .then(async res => {
-    //     const resp = await res.json();
-    //     return resp;
-    //   })
-    //   .catch(err => {
-    //     console.log("Error: ", err);
-    //   });
-    // if (callback !== undefined) {
-    //   //console.log(data);
-    //   callback(data);
-    // }
-
-    //return await data;
   },
 
   _toTitleCase(str) {

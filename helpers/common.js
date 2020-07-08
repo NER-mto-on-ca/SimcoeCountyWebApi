@@ -18,7 +18,7 @@ module.exports = {
   isHostAllowed(req, res) {
     // CHECK THE CALLER
     if (config.allowedOrigins.indexOf(req.headers.host) === -1) {
-      res.send("Unauthorized Domain!");
+      res.send("Unauthorized Domain! - " + req.headers.host);
       return false;
     }
 
