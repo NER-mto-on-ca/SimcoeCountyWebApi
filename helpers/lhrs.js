@@ -10,6 +10,20 @@ module.exports = {
       callback(result);
     });
   },
+  getLHRSByXYMulti: function(obj, callback) {
+    const lhrsVersion = obj.version;
+    const snappingDistance = obj.snappingDistance;
+    const long = obj.long;
+    const lat = obj.lat;
+
+    const sql = `SELECT * FROM postgisftw.lhrs_by_xy_multiple($1,$2,$3,$4);`;
+    var values = [lhrsVersion,snappingDistance,long,lat];
+
+    const pg = new postgres();
+    pg.selectAllWithValues(sql,values, result => {
+      callback(result);
+    });
+  },
   getLHRSByXY: function(obj, callback) {
     const lhrsVersion = obj.version;
     const snappingDistance = obj.snappingDistance;

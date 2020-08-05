@@ -225,7 +225,13 @@ router.get("/getLHRSVersion", function(req, res, next) {
     res.send(JSON.stringify(result));
   });
 });
-
+// LHRS - GET Multiple LHRS BY XY
+router.post("/postGetLHRSByXYMulti", function(req, res, next) {
+  if (!common.isHostAllowed(req, res)) return;
+  lhrs.getLHRSByXYMulti(req.body, result => {
+    res.send(JSON.stringify({result:result}));
+  });
+});
 // LHRS - GET LHRS BY XY
 router.post("/postGetLHRSByXY", function(req, res, next) {
   if (!common.isHostAllowed(req, res)) return;
