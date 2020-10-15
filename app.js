@@ -7,6 +7,7 @@ var cors = require("cors");
 var helmet = require("helmet");
 
 var indexRouter = require("./routes/index");
+var reportRouter = require("./routes/report");
 var usersRouter = require("./routes/users");
 var asyncRouter = require("./routes/async");
 
@@ -30,6 +31,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", indexRouter);
+app.use("/report", reportRouter);
 app.use("/users", usersRouter);
 app.use("/async", asyncRouter);
 app.use(bodyParser);

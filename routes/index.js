@@ -19,7 +19,7 @@ const routeWait = new routerPromise();
 
 /* GET home page. */
 router.get("/", function(req, res, next) {
-  res.render("index", { title: "opengiswebapi" });
+  res.send({ title: "opengiswebapi" });
 });
 
 // APP STATS
@@ -106,6 +106,7 @@ router.post("/postBufferGeometry", function(req, res, next) {
     res.send(JSON.stringify(result));
   });
 });
+
 
 // GEOMETRY - CENTER
 router.post("/postGetGeometryCenter", function(req, res, next) {
@@ -262,6 +263,9 @@ router.post("/postGetLHRSLinearByMDistance", function(req, res, next) {
     res.send(JSON.stringify({result:result}));
   });
 });
+
+
+
 
 // GET APP STATS
 // router.get("/getAppStats/:streetName", function(req, res, next) {
