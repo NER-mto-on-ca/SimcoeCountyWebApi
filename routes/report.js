@@ -5,14 +5,10 @@ var feedback = require("../helpers/feedback");
 var appStats = require("../helpers/appStats");
 const fetch = require("node-fetch");
 const config = require("../config.json");
-const geometry = require("../helpers/geometry");
-const lhrs = require("../helpers/lhrs");
 const reports = require("../helpers/reports");
-const myMaps = require("../helpers/myMaps");
-const streetAddresses = require("../helpers/streetAddresses");
-const search = require("../helpers/search");
 const common = require("../helpers/common");
-const weather = require("../helpers/weather");
+const reportConfig = require("../helpers/reportsConfig.json");
+
 
 var request = require("request");
 
@@ -20,28 +16,33 @@ const routeWait = new routerPromise();
 
 /* GET home page. */
 router.get("/", function(req, res, next) {
-    let reports = [
-        {"title": "PAR Report", "preview":"parReportPreview", "report":"parReport"}
-    ];
+    //let reports = [];  
+    let reports = reportConfig.reports.map(item =>{
+      return {"title": item.title, "preview":"ReportPreview/"+item.report, "report":"Report/"+item.report};
+    });
     res.send(JSON.stringify(reports));
    
   });
 
   // REPORT - PAR
-router.post("/parReport", function(req, res, next) {
+router.post("/Report/:reportName", function(req, res, next) {
     if (!common.isHostAllowed(req, res)) return;
   
     // GET PAR REPORT
-    reports.getPARReport(req.body, result => {
-      res.download(result,'PAR_REPORT.xlsx'); 
+    reports.getReport(req.body,req.params.reportName, result => {
+      if (!result){
+        res.send(JSON.stringify({error:"Invalid Report Selection!"}));
+      } else {
+        res.download(result,'REPORT.xlsx'); 
+      }
     });
   });
   // REPORT SUMMARY - PAR 
-router.post("/parReportPreview", function(req, res, next) {
+router.post("/ReportPreview/:reportName", function(req, res, next) {
     if (!common.isHostAllowed(req, res)) return;
   
     // GET PAR REPORT SUMMARY
-    reports.getPARReportSummary(req.body, result => {
+    reports.getReportSummary(req.body, req.params.reportName, result => {
       res.send(JSON.stringify(result));
     });
   });

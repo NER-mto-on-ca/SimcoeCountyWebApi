@@ -1,0 +1,13 @@
+{
+    "reports": [
+                {
+                    "report":"sample",
+                    "title": "Sample Report",
+                    "layers": [
+                            {"tab": "tab1", "table":"test.sample","geom_field":"geom", "order_field":"id", "sheet_order":1},
+                            {"tab": "tab1", "table":"test.sample1","geom_field":"geom", "order_field":"id", "sheet_order":2}
+                           ]
+                }
+            ],
+    "excludedColumns":["geom","gid","wkb_geometry","globalid","id"]
+}

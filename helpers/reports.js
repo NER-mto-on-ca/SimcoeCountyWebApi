@@ -1,20 +1,26 @@
 const postgres = require("./postgres");
 const Excel = require('exceljs');
 const uuidv4 = require("uuid/v4");
+const reportConfig = require("./reportsConfig.json");
+
 
 module.exports = {
-  getPARReport:function(obj,callback) {
+  getReport:function(obj,reportName,callback) {
     const geoJSON = obj.geoJSON;
     const srid = obj.srid;
     const buffer = obj.buffer === undefined ? 0 : obj.buffer;
-
+    const reports = reportConfig.reports;
+    let report = reports.filter(item => {return item.report === reportName})[0];
+    if (!report){
+      callback();
+      return;
+    } 
     let sqlSelect = `SELECT target.*`;
     let sqlFrom =`FROM table as target`;
     let sqlWhere = `WHERE ST_Intersects(target.geom, ST_Buffer(ST_SetSRID(ST_GeomFromGeoJSON($1), $2),$3))`;
     let sqlOrder = `;`;
-    const items = [
-        ];
-    const excludedColumns=['geom','gid','wkb_geometry','globalid','id'];
+    const items = report.layers;
+    const excludedColumns=reportConfig.excludedColumns;
     let workbook = new Excel.Workbook();
     let processed=0;
     items.forEach(item => {
@@ -56,18 +62,23 @@ module.exports = {
     });
     
   },
-  getPARReportSummary:function(obj,callback) {
+  getReportSummary:function(obj,reportName,callback) {
     let output = [];
     const geoJSON = obj.geoJSON;
     const srid = obj.srid;
     const buffer = obj.buffer === undefined ? 0 : obj.buffer;
-
+    const reports = reportConfig.reports;
+    let report = reports.filter(item => {return item.report === reportName})[0];
+    if (!report){
+      callback();
+      return;
+    } 
     let sqlSelect = `SELECT COUNT(*) as record_count`;
     let sqlFrom =`FROM table as target`;
     let sqlWhere = `WHERE ST_Intersects(target.geom, ST_SetSRID(ST_GeomFromGeoJSON($1), $2))`;
     let sqlOrder = `;`;
-    const items = [
-        ];
+    const items = report.layers;
+
     let processed=0;
     items.forEach(item => {
         sqlFrom = ['FROM', item.table, 'as target'].join(" ");
